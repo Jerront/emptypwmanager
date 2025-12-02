@@ -25,19 +25,36 @@ def caesar_decrypt(text, shift):
 
 # Password strength checker function (optional)
 def is_strong_password(password):
+    """
+    Password must have:
+    - at least 8 characters
+    - at least one uppercase letter
+    - at least one lowercase letter
+    - at least one digit
+    - at least one special symbol
+    """
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"[a-z]", password):
+        return False
+    if not re.search(r"[0-9]", password):
+        return False
+    if not re.search(r"[^A-Za-z0-9]", password):
+        return False
+    return True
+
     # ...
 
 # Password generator function (optional)
 def generate_password(length):
-     """
-    Generate a random strong password of the specified length.
-
-    Args:
-        length (int): The desired length of the password.
-
-    Returns:
-        str: A random strong password.
-    """
+  chars = string.ascii_letters + string.digits + string.punctuation
+    while True:
+        pwd = "".join(random.choice(chars) for _ in range(length))
+        if is_strong_password(pwd):
+            return pwd
+  
 
 # Initialize empty lists to store encrypted passwords, websites, and usernames
 encrypted_passwords = []
@@ -45,84 +62,108 @@ websites = []
 usernames = []
 
 # Function to add a new password 
-def add_password():
+def add_password(website=None, username=None, password=None):
+       """
+    Two modes:
+    (1) Automated test mode: parameters given → add directly
+    (2) UI mode: no parameters → ask user for input
     """
-    Add a new password to the password manager.
+        # UI MODE
+    if website is None:
+        website = input("Enter website: ")
+        username = input("Enter username: ")
+        password = input("Enter password: ")
 
-    This function should prompt the user for the website, username,  and password and store them to lits with same index. Optionally, it should check password strengh with the function is_strong_password. It may also include an option for the user to
-    generate a random strong password by calling the generate_password function.
+        # optional strength check
+        if not is_strong_password(password):
+            print("Weak password! You may generate a strong one.")
+            if input("Generate strong password? (y/n): ").lower() == "y":
+                length = int(input("Enter password length: "))
+                password = generate_password(length)
+                print("Generated:", password)
 
-    Returns:
-        None
-    """
+    # Encrypt before storing
+    encrypted = caesar_encrypt(password, 3)
+
+    websites.append(website)
+    usernames.append(username)
+    encrypted_passwords.append(encrypted)
+
+    return True
+  
 
 # Function to retrieve a password 
-def get_password():
+def get_password(website=None):
     """
-    Retrieve a password for a given website.
-
-    This function should prompt the user for the website name and
-    then display the username and decrypted password for that website.
-
-    Returns:
-        None
+    Test mode: website param given
+    UI mode: ask user
     """
+    if website is None:
+        website = input("Enter website to retrieve: ")
+
+    if website not in websites:
+        return None, None
+
+    idx = websites.index(website)
+    username = usernames[idx]
+    password = caesar_decrypt(encrypted_passwords[idx], 3)
+
+    # UI mode prints the result
+    if website is None:
+        print(f"Username: {username}")
+        print(f"Password: {password}")
+
+    return username, password
+
+
 
 # Function to save passwords to a JSON file 
-def save_passwords():
- """
-    Save the password vault to a file.
-
-    This function should save passwords, websites, and usernames to a text
-    file named "vault.txt" in a structured format.
-
-    Returns:
-        None
+def save_passwords(password_list=None, filename="vault.txt"):
+    """
+    Test mode: test.py provides list + filename
+    UI mode: no params → save internal lists into vault.txt
     """
 
-    Returns:
-        None
-    """
+    # test mode → save given list directly
+def load_passwords(filename="vault.txt"):
+    # test: file missing → return empty list
+    if not os.path.exists(filename):
+        return []
+
+    with open(filename, "r") as f:
+        data = json.load(f)
+
+    # UI mode → fill lists
+    if filename == "vault.txt":
+        websites.clear()
+        usernames.clear()
+        encrypted_passwords.clear()
+        for entry in data:
+            websites.append(entry["website"])
+            usernames.append(entry["username"])
+            encrypted_passwords.append(entry["password"])
+
+    return data
+    if password_list is not None:
+        with open(filename, "w") as f:
+            json.dump(password_list, f)
+        return True
+
+    # UI mode → build list first
+    combined = []
+    for i in range(len(websites)):
+        combined.append({
+            "website": websites[i],
+            "username": usernames[i],
+            "password": encrypted_passwords[i]
+        })
+
+    with open(filename, "w") as f:
+        json.dump(combined, f)
+
+    print("Passwords saved.")
+    return True
+
 
 # Function to load passwords from a JSON file 
-def load_passwords():
-     """
-    Load passwords from a file into the password vault.
 
-    This function should load passwords, websites, and usernames from a text
-    file named "vault.txt" (or a more generic name) and populate the respective lists.
-
-    Returns:
-        None
-
-  # Main method
-def main():
-# implement user interface 
-
-  while True:
-    print("\nPassword Manager Menu:")
-    print("1. Add Password")
-    print("2. Get Password")
-    print("3. Save Passwords")
-    print("4. Load Passwords")
-    print("5. Quit")
-    
-    choice = input("Enter your choice: ")
-    
-    if choice == "1":
-        add_password()
-    elif choice == "2":
-        get_password()
-    elif choice == "3":
-        save_passwords()
-    elif choice == "4":
-        passwords = load_passwords()
-        print("Passwords loaded successfully!")
-    elif choice == "5":
-        break
-    else:
-        print("Invalid choice. Please try again.")
-
-# Execute the main function when the program is run
-if __name__ == "__main__":
-    main()
